@@ -51,16 +51,20 @@ class BaselineCNN(nn.Module):
             nn.AdaptiveAvgPool2d((1, 1))
         )
         
-        # Fruit classification head
+        # Shared Feature Vector (fruit)
         self.fruit_head = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(512, num_fruits)
+            nn.Linear(256, num_fruits)
         )
-
-        # Ripeness regression head
+        
+        # Shared Feature Vector (ripeness): outputs a score in [0, 1]
         self.ripeness_head = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(512, 1),
+            nn.Linear(256, 1),
             nn.Sigmoid()
         )
 
@@ -222,7 +226,7 @@ class CnnDemoApp:
             baseline_model.to(self.device)
             baseline_model.eval()
             self.models["baseline"] = baseline_model
-            print("✓ Baseline model loaded")
+            print("Baseline model loaded")
 
             # Load advanced model
             print("Loading advanced model...")
@@ -233,7 +237,7 @@ class CnnDemoApp:
             advanced_model.to(self.device)
             advanced_model.eval()
             self.models["advanced"] = advanced_model
-            print("✓ Advanced model loaded")
+            print("Advanced model loaded")
 
         except FileNotFoundError as e:
             messagebox.showerror(
@@ -277,7 +281,16 @@ class CnnDemoApp:
             font=("Helvetica", 10)
         ).pack(side="left", padx=(0, 10))
         
-        self.model_var = tk.StringVar(value="advanced")
+        self.model_var = tk.StringVar(value="baseline")
+
+        baseline_radio = ttk.Radiobutton(
+            model_frame,
+            text="Baseline (Custom CNN)",
+            variable=self.model_var,
+            value="baseline",
+            command=self.on_model_change
+        )
+        baseline_radio.pack(side="left", padx=5)
         
         advanced_radio = ttk.Radiobutton(
             model_frame,
@@ -287,15 +300,7 @@ class CnnDemoApp:
             command=self.on_model_change
         )
         advanced_radio.pack(side="left", padx=5)
-        
-        baseline_radio = ttk.Radiobutton(
-            model_frame,
-            text="Baseline (Custom CNN)",
-            variable=self.model_var,
-            value="baseline",
-            command=self.on_model_change
-        )
-        baseline_radio.pack(side="left", padx=5)
+
 
         # Result subtitle
         self.result_var = tk.StringVar(value="")
@@ -548,10 +553,11 @@ class CnnDemoApp:
 
 
 def main():
+    print("Starting Fruit Ripeness Detector UI...")
     root = tk.Tk()
     app = CnnDemoApp(root)
     root.mainloop()
 
 
-if __name__ == "__main-ui__":
+if __name__ == "__main__":
     main()
